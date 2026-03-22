@@ -7,7 +7,7 @@ from pathlib import Path
 
 st.set_page_config(page_title="Symptoms → Disease → Doctor", page_icon="🩺")
 st.title("🩺 Symptoms → Disease → Doctor")
-st.write("Wybierz gotowe zestawy objawow z listy, a aplikacja pokaze sugerowanych lekarzy.")
+st.write("Wybierz pojedyncze objawy z pelnej listy, a aplikacja zasugeruje chorobe i lekarza.")
 
 def clean_symptoms(text):
     text = str(text).lower().strip()
@@ -17,6 +17,161 @@ def clean_symptoms(text):
 
 def comma_tokenizer(text):
     return [t.strip() for t in str(text).split(",") if t.strip()]
+
+Disease_TRANSLATIONS_PL = {
+    "fungal infection": "infekcja grzybicza",
+    "allergy": "alergia",
+    "gerd": "choroba refluksowa przelyku (GERD)",
+    "chronic cholestasis": "przewlekla cholestaza",
+    "drug reaction": "reakcja polekowa",
+    "peptic ulcer diseae": "choroba wrzodowa zoladka/dwunastnicy",
+    "aids": "AIDS",
+    "diabetes": "cukrzyca",
+    "gastroenteritis": "zapalenie zoladka i jelit",
+    "bronchial asthma": "astma oskrzelowa",
+    "hypertension": "nadcisnienie tetnicze",
+    "migraine": "migrena",
+    "cervical spondylosis": "spondyloza szyjna",
+    "paralysis brain hemorrhage": "porazenie po krwotoku mozgowym",
+    "jaundice": "zoltaczka",
+    "malaria": "malaria",
+    "chicken pox": "ospa wietrzna",
+    "dengue": "denga",
+    "typhoid": "dur brzuszny",
+    "hepatitis a": "wirusowe zapalenie watroby typu A",
+    "hepatitis b": "wirusowe zapalenie watroby typu B",
+    "hepatitis c": "wirusowe zapalenie watroby typu C",
+    "hepatitis d": "wirusowe zapalenie watroby typu D",
+    "hepatitis e": "wirusowe zapalenie watroby typu E",
+    "alcoholic hepatitis": "alkoholowe zapalenie watroby",
+    "tuberculosis": "gruzlica",
+    "common cold": "przeziebienie",
+    "pneumonia": "zapalenie pluc",
+    "dimorphic hemmorhoids piles": "hemoroidy",
+    "heart attack": "zawal serca",
+    "varicose veins": "zylaki",
+    "hypothyroidism": "niedoczynnosc tarczycy",
+    "hyperthyroidism": "nadczynnosc tarczycy",
+    "hypoglycemia": "hipoglikemia",
+    "osteoarthristis": "choroba zwyrodnieniowa stawow",
+    "arthritis": "zapalenie stawow",
+    "acne": "tradzik",
+    "urinary tract infection": "zakazenie drog moczowych",
+    "psoriasis": "luszczyca",
+    "impetigo": "liszajec zakazny",
+}
+
+def translate_disease_to_polish(disease_name):
+    key = str(disease_name).lower().strip()
+    key = re.sub(r"[_-]+", " ", key)
+    key = re.sub(r"\s+", " ", key)
+    return Disease_TRANSLATIONS_PL.get(key, None)
+
+DISEASE_HELPER_SYMPTOMS = {
+    "migraine": ["nausea", "vomiting", "sensitivity to light"],
+    "common cold": ["runny nose", "sneezing", "throat irritation"],
+    "pneumonia": ["chest pain", "breathlessness", "high fever"],
+    "bronchial asthma": ["breathlessness", "cough", "chest tightness"],
+    "urinary tract infection": ["burning urination", "frequent urination", "foul smell of urine"],
+    "dengue": ["high fever", "joint pain", "skin rash"],
+    "chicken pox": ["skin rash", "itching", "high fever"],
+    "gastroenteritis": ["diarrhea", "vomiting", "abdominal pain"],
+}
+
+def normalize_text(value):
+    value = str(value).lower().strip()
+    value = re.sub(r"[_-]+", " ", value)
+    value = re.sub(r"\s+", " ", value)
+    return value
+
+SYMPTOM_TRANSLATIONS_PL = {
+    "itching": "swedzenie",
+    "skin rash": "wysypka skorna",
+    "redness": "zaczerwienienie",
+    "fever": "goraczka",
+    "high fever": "wysoka goraczka",
+    "cough": "kaszel",
+    "sore throat": "bol gardla",
+    "runny nose": "katar",
+    "sneezing": "kichanie",
+    "hoarseness": "chrypka",
+    "breathlessness": "dusznosc",
+    "chest pain": "bol w klatce piersiowej",
+    "chest tightness": "ucisk w klatce piersiowej",
+    "fatigue": "zmeczenie",
+    "palpitations": "kolatanie serca",
+    "nausea": "nudnosci",
+    "vomiting": "wymioty",
+    "abdominal pain": "bol brzucha",
+    "diarrhea": "biegunka",
+    "headache": "bol glowy",
+    "dizziness": "zawroty glowy",
+    "sensitivity to light": "nadwrazliwosc na swiatlo",
+    "joint pain": "bol stawow",
+    "swelling": "obrzek",
+    "stiffness": "sztywnosc",
+    "reduced movement": "ograniczenie ruchu",
+    "burning urination": "pieczenie przy oddawaniu moczu",
+    "frequent urination": "czestomocz",
+    "lower abdominal pain": "bol podbrzusza",
+    "foul smell of urine": "nieprzyjemny zapach moczu",
+    "eye pain": "bol oka",
+    "eye redness": "zaczerwienienie oka",
+    "blurred vision": "zamglone widzenie",
+    "photophobia": "swiatlowstret",
+    "weight loss": "spadek masy ciala",
+    "excessive thirst": "wzmozone pragnienie",
+    "throat irritation": "podraznienie gardla",
+}
+
+SYMPTOM_WORD_TRANSLATIONS_PL = {
+    "pain": "bol",
+    "fever": "goraczka",
+    "high": "wysoka",
+    "abdominal": "brzucha",
+    "chest": "klatki",
+    "joint": "stawow",
+    "eye": "oka",
+    "redness": "zaczerwienienie",
+    "burning": "pieczenie",
+    "frequent": "czeste",
+    "urination": "oddawanie moczu",
+    "urine": "mocz",
+    "foul": "nieprzyjemny",
+    "smell": "zapach",
+    "runny": "wodnisty",
+    "nose": "nos",
+    "sore": "bolacy",
+    "throat": "gardlo",
+    "skin": "skora",
+    "rash": "wysypka",
+    "blurred": "zamglone",
+    "vision": "widzenie",
+    "sensitivity": "nadwrazliwosc",
+    "light": "swiatlo",
+    "weight": "masa",
+    "loss": "spadek",
+}
+
+def translate_symptom_to_polish(symptom_name):
+    symptom_en = normalize_text(symptom_name)
+    if symptom_en in SYMPTOM_TRANSLATIONS_PL:
+        return SYMPTOM_TRANSLATIONS_PL[symptom_en]
+
+    translated_tokens = []
+    translated_any = False
+    for token in symptom_en.split(" "):
+        translated = SYMPTOM_WORD_TRANSLATIONS_PL.get(token, token)
+        if translated != token:
+            translated_any = True
+        translated_tokens.append(translated)
+
+    if translated_any:
+        return " ".join(translated_tokens)
+    return None
+
+def display_symptom(symptom_name):
+    return normalize_text(symptom_name)
 
 model_path = Path("model.joblib")
 vec_path = Path("vectorizer.joblib")
@@ -48,43 +203,34 @@ if model_path.exists() and vec_path.exists() and vec_path.stat().st_size >= MIN_
             if k in d: return v
         return "Lekarz rodzinny"
 
-    symptom_groups = {
-        "Skora: swedzenie, wysypka, zaczerwienienie, goraczka": "itching, skin rash, redness, fever",
-        "Uklad oddechowy: kaszel, goraczka, dusznosc, bol gardla": "cough, fever, breathlessness, sore throat",
-        "Zoladek i jelita: nudnosci, wymioty, bol brzucha, biegunka": "nausea, vomiting, abdominal pain, diarrhea",
-        "Neurologia: bol glowy, zawroty glowy, nudnosci, wrazliwosc na swiatlo": "headache, dizziness, nausea, sensitivity to light",
-        "Laryngologia: bol gardla, katar, kichanie, chrypka": "sore throat, runny nose, sneezing, hoarseness",
-        "Kardiologia: bol w klatce piersiowej, dusznosc, zmeczenie, kolatanie serca": "chest pain, breathlessness, fatigue, palpitations",
-        "Urologia: bol przy oddawaniu moczu, czestomocz, goraczka, bol podbrzusza": "burning urination, frequent urination, fever, lower abdominal pain",
-        "Ortopedia: bol stawow, obrzek, sztywnosc, ograniczenie ruchu": "joint pain, swelling, stiffness, reduced movement",
-        "Endokrynologia: wzmozone pragnienie, czeste oddawanie moczu, oslabienie, spadek masy": "excessive thirst, frequent urination, fatigue, weight loss",
-        "Okulistyka: bol oka, zaczerwienienie oka, zamglone widzenie, swiatlowstret": "eye pain, eye redness, blurred vision, photophobia",
-    }
+    all_symptoms = sorted([str(s) for s in vectorizer.get_feature_names_out()])
+    all_symptoms_set = set(all_symptoms)
 
-    selected_groups = st.multiselect(
-        "Wybierz objawy (mozna zaznaczyc kilka zestawow):",
-        options=list(symptom_groups.keys()),
+    st.subheader("Krok 1: Dodawanie objawow pojedynczo")
+    st.caption("Wybieraj objawy jeden po drugim. Mozesz je potem usunac.")
+
+    if "selected_symptoms" not in st.session_state:
+        st.session_state.selected_symptoms = []
+
+    symptom_to_add = st.selectbox(
+        "Wybierz objaw do dodania:",
+        options=all_symptoms,
+        format_func=display_symptom,
+    )
+    if st.button("Dodaj objaw"):
+        if symptom_to_add not in st.session_state.selected_symptoms:
+            st.session_state.selected_symptoms.append(symptom_to_add)
+
+    st.session_state.selected_symptoms = st.multiselect(
+        "Wybrane objawy pacjenta:",
+        options=all_symptoms,
+        default=st.session_state.selected_symptoms,
+        format_func=display_symptom,
     )
 
-    if selected_groups:
-        selected_symptom_text = ", ".join(symptom_groups[g] for g in selected_groups)
-        cleaned = clean_symptoms(selected_symptom_text)
-        st.caption(f"Zlaczone objawy: {cleaned}")
-
-        # Podglad sugerowanych lekarzy na bazie kazdego kliknietego zestawu.
-        doctor_suggestions = []
-        for group in selected_groups:
-            group_cleaned = clean_symptoms(symptom_groups[group])
-            try:
-                group_pred = model.predict(vectorizer.transform([group_cleaned]))
-                if len(group_pred) > 0:
-                    doctor_suggestions.append(get_doctor(group_pred[0]))
-            except Exception:
-                continue
-
-        unique_doctors = sorted(set(doctor_suggestions))
-        if unique_doctors:
-            st.info("Sugerowani lekarze na podstawie zaznaczonych zestawow: " + ", ".join(unique_doctors))
+    if st.session_state.selected_symptoms:
+        cleaned = clean_symptoms(", ".join(st.session_state.selected_symptoms))
+        st.caption("Aktualny zestaw objawow: " + ", ".join(display_symptom(s) for s in st.session_state.selected_symptoms))
 
         if st.button("Przewidz glowna chorobe"):
             try:
@@ -97,10 +243,41 @@ if model_path.exists() and vec_path.exists() and vec_path.stat().st_size >= MIN_
                     doctor = get_doctor(disease)
                     st.success(f"Przewidywana choroba: **{disease}**")
                     st.info(f"Sugerowany lekarz: **{doctor}**")
+
+                    # Pytanie pomocnicze: dopytaj o dodatkowy typowy objaw.
+                    disease_key = normalize_text(disease)
+                    helper_candidates = DISEASE_HELPER_SYMPTOMS.get(disease_key, [])
+                    missing_candidate = None
+                    selected_norm = {normalize_text(s) for s in st.session_state.selected_symptoms}
+                    for candidate in helper_candidates:
+                        c_norm = normalize_text(candidate)
+                        if c_norm not in selected_norm:
+                            if candidate in all_symptoms_set:
+                                missing_candidate = candidate
+                                break
+                            candidate_alt = candidate.replace(" ", "_")
+                            if candidate_alt in all_symptoms_set:
+                                missing_candidate = candidate_alt
+                                break
+
+                    if missing_candidate:
+                        st.markdown("---")
+                        st.subheader("Pytanie pomocnicze")
+                        st.write(f"Czy wystepuje tez objaw: **{display_symptom(missing_candidate)}** ?")
+                        helper_answer = st.radio(
+                            "Odpowiedz:",
+                            options=["Nie", "Tak"],
+                            horizontal=True,
+                            key=f"helper_{normalize_text(missing_candidate)}",
+                        )
+                        if helper_answer == "Tak":
+                            if missing_candidate not in st.session_state.selected_symptoms:
+                                st.session_state.selected_symptoms.append(missing_candidate)
+                                st.success("Dodano objaw. Kliknij ponownie 'Przewidz glowna chorobe', aby odswiezyc wynik.")
             except Exception as e:
                 st.error(f"Blad predykcji: {e}")
     else:
-        st.warning("Wybierz przynajmniej jeden zestaw objawow z listy.")
+        st.warning("Dodaj przynajmniej jeden objaw z listy.")
 else:
     if vec_path.exists() and vec_path.stat().st_size < MIN_VEC_SIZE:
         st.warning("vectorizer.joblib uszkodzony lub pusty. Uruchom notebook od sekcji Feature Engineering i komórkę z joblib.dump.")
